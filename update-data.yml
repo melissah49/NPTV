@@ -1,0 +1,26 @@
+name: Auto Update Desi Serials (1pm & 7pm EAT)
+
+on:
+  schedule:
+    - cron: '0 8 * * *'   # 1:00 PM EAT
+    - cron: '0 14 * * *'  # 7:00 PM EAT
+  workflow_dispatch:
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - run: node scraper.js
+      - name: Commit updated data
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add data.json
+          git commit -m "Auto update - $(date)" || echo "No changes"
+          git push
