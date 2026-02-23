@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desi Serials • Simple TV</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        body { font-family: system-ui, sans-serif; font-size: 28px; line-height: 1.5; }
+        .big-btn { font-size: 32px; padding: 28px 36px; border-radius: 9999px; }
+    </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="w-96 bg-zinc-900 border-r border-red-600 flex flex-col p-8">
+            <div class="text-6xl font-bold mb-12">Desi Serials</div>
+            <div class="text-3xl mb-6">Channels</div>
+            <div id="channels-list" class="flex-1 space-y-4 overflow-auto"></div>
+            <div class="pt-8 text-center text-xl text-red-400">Auto updates 1pm & 7pm daily</div>
+        </div>
+
+        <!-- Main -->
+        <div class="flex-1 flex flex-col">
+            <div class="h-24 bg-zinc-900 px-10 flex items-center text-4xl font-medium border-b border-zinc-700" id="header">Home</div>
+            <div id="main-area" class="flex-1 overflow-auto p-10"></div>
+        </div>
+    </div>
+
+    <script>
+        let allData = {};
+        async function loadData() {
+            const res = await fetch('/data.json');
+            allData = await res.json();
+            renderChannels();
+            showHome();
+        }
+
+        function renderChannels() {
+            let html = '';
+            Object.keys(allData).forEach(ch => {
+                html += `<button onclick="loadChannel('${ch}')" class="big-btn w-full text-left bg-zinc-800 hover:bg-red-600">${ch} <span class="float-right text-2xl">→</span></button>`;
+            });
+            document.getElementById('channels-list').innerHTML = html;
+        }
+
+        function showHome() {
+            document.getElementById('header').textContent = 'Pick a channel';
+            let html = `<div class="max-w-3xl mx-auto text-center text-5xl mt-20">Welcome! Tap any channel on the left</div>`;
+            document.getElementById('main-area').innerHTML = html;
+        }
+
+        function loadChannel(ch) {
+            document.getElementById('header').textContent = ch;
+            const series = allData[ch] || [];
+            let html = `<div class="max-w-5xl mx-auto"><div class="text-5xl mb-10">${ch} Serials</div><div class="grid grid-cols-2 gap-8">`;
+            series.forEach((s,i) => {
+                html += `<div onclick="openSeries('${ch}',${i})" class="big-btn bg-zinc-800 hover:bg-zinc-700 cursor-pointer text-center">${s.name}</div>`;
+            });
+            html += `</div></div>`;
+            document.getElementById('main-area').innerHTML = html;
+        }
+
+        let currentSeries = null;
+        function openSeries(ch, idx) {
+            currentSeries = allData[ch][idx];
+            let html = `<div class="max-w-4xl mx-auto"><div class="flex items-center gap-6 mb-12">
+                <button onclick="loadChannel('${ch}')" class="text-5xl">←</button>
+                <div class="text-6xl font-bold">${currentSeries.name}</div>
+            </div>`;
+            // Episodes - newest at bottom
+            const eps = [...currentSeries.episodes].sort((a,b) => new Date(a.date) - new Date(b.date));
+            eps.forEach((ep,i) => {
+                html += `<div onclick="play(${i})" class="big-btn bg-zinc-800 hover:bg-red-600 mb-4 flex justify-between items-center cursor-pointer">
+                    <div>${ep.title} <span class="text-red-400 text-2xl">(${ep.date})</span></div>
+                    <i class="fas fa-play text-5xl"></i>
+                </div>`;
+            });
+            html += `</div>`;
+            document.getElementById('main-area').innerHTML = html;
+        }
+
+        function play(idx) {
+            const ep = currentSeries.episodes[idx];
+            window.open(ep.sources[0], '_blank'); // opens first source in new tab (works on all devices)
+            alert('Playing ' + ep.title + '\nIf video doesn’t load, try next source or refresh later.');
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
